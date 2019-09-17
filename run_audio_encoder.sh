@@ -9,4 +9,4 @@ echo $PYTHON, $NNODES, $RANK, $MASTER_ADDR, $MASTER_PORT
 $PYTHON -m torch.distributed.launch --nproc_per_node=$1 \
     --nnodes=${NNODES} --node_rank=${RANK} --master_addr=${MASTER_ADDR} --master_port=${MASTER_PORT}  \
     ./Audio_to_Image/train_audio_encoder.py ${@:2} \
-    2>&1 | tee ./output/Audio_to_Image/log/audio_encoder/log.txt
+    2>&1 | tee ./output/Audio_to_Image/log.txt

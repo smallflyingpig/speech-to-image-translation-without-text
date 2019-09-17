@@ -57,7 +57,11 @@ you can get APP_ID, API_KEY, SECRET_KEY from Baidu AI platform(free).
 └── train.json
 ```
 ## training the speech encoder
-
+In the project dictionary "speech-to-image-translation-without-text", run
+```
+export PYTHONPATH=$PYTHONPATH:$(pwd)
+bash ./run_audio_encoder.sh 1 --output_dir ./output/Audio_to_Image/log/birds_speech_encoder --epoch 1000 --eval_every 10 --lr_scheduler_step_size 200 --lr_scheduler_gamma 0.5 --loss_diff 1 --loss_same 0.1 --l1_flag --jel_flag --lambda_l1 5 --distill_flag --lambda_distill 1000 --learning_rate 1e-3  --dataset birds --bidirectional
+```
 ## extracting speech features
 ## training the generator
 
