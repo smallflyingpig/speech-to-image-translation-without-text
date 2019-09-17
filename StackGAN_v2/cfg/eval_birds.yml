@@ -1,0 +1,32 @@
+CONFIG_NAME: '3stages'
+
+DATASET_NAME: 'birds'
+EMBEDDING_TYPE: 'cnn-rnn'
+DATA_DIR: './data/birds'
+GPU_ID: '0'
+WORKERS: 8  # 4
+
+TREE:
+    BRANCH_NUM: 3
+
+
+TEST:
+    B_EXAMPLE: False
+
+
+TRAIN:
+    FLAG: False
+    NET_G: './output/StackGAN-v2/birds_3stages_2018_10_16_09_43_56_back/Model/netG_335000.pth' #'./output/StackGAN-v2/author_pretrained_model/model/netG_210000.pth' #'./output/StackGAN-v2/birds_3stages_2018_10_16_09_43_56/Model/netG_300000.pth'
+    BATCH_SIZE: 24
+
+
+GAN:
+    EMBEDDING_DIM: 128
+    DF_DIM: 64
+    GF_DIM: 64
+    Z_DIM: 100
+    R_NUM: 2
+    B_CONDITION: True
+ 
+TEXT:
+    DIMENSION: 1024
