@@ -27,7 +27,6 @@ from model import G_NET, D_NET64, D_NET128, D_NET256, D_NET512, D_NET1024, INCEP
 import sys
 import os
 sys.path.append(os.getcwd())
-from Audio_to_Image.Inception_v3 import Inception3_CUB
 
 
 
@@ -215,11 +214,7 @@ def load_network(gpus:list, distributed:bool):
             state_dict = torch.load('%s%d.pth' % (cfg.TRAIN.NET_D, i), map_location=lambda storage, loc: storage)
             netsD[i].load_state_dict(state_dict)
 
-    if cfg.INCEPTION_CUB:
-        inception_model = Inception3_CUB(num_classes=200) #INCEPTION_V3()
-        inception_model.load_state_dict(torch.load("./StackGAN-v2/model/inception-v3_best.pt", map_location=torch.device("cuda:{}".format(gpus[0]))))
-    else:
-        inception_model = INCEPTION_V3()
+    inception_model = INCEPTION_V3()
 
     
     if not distributed:
@@ -686,11 +681,7 @@ class condGANTrainer(object):
     @torch.no_grad()
     def evaluate(self, split_dir):
         sample_num_per_image = 10
-        if cfg.INCEPTION_CUB:
-            self.inception_model = Inception3_CUB(num_classes=200).eval() #INCEPTION_V3().eval()
-            self.inception_model.load_state_dict(torch.load("./StackGAN-v2/model/inception-v3_best.pt", map_location=lambda storage, loc: storage))
-        else:
-            self.inception_model = INCEPTION_V3().eval()
+        self.inception_model = INCEPTION_V3().eval()
 
         if cfg.CUDA:
             self.inception_model = self.inception_model.cuda()

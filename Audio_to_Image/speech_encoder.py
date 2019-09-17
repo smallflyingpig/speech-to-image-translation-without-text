@@ -14,13 +14,13 @@ def conv_layer_2d(in_channel, out_channel, kernel_size, stride, padding):
 
 class CNNRNN(nn.Module):
     def __init__(self, n_filters, embedding_dim=1024, drop_prob=0.5,
-                 nhidden=1024, nlayers=1, bidirectional=False, nsent=1024,):
+                 nhidden=1024, rnn_layers=1, bidirectional=False, nsent=1024,):
         super(CNNRNN, self).__init__()
         self.bidirectional = bidirectional
         self.num_direction = 2 if bidirectional else 1
         self.embedding_dim = embedding_dim
         self.nhidden = nhidden // self.num_direction
-        self.rnn_layers = nlayers
+        self.rnn_layers = rnn_layers
         self.drop_prob = drop_prob
         self.nsent = nsent // self.num_direction
         

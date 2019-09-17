@@ -51,20 +51,21 @@ class PlaceSubSet(DatasetBase):
     }
     def __init__(self, data_root, train=True):
         # read meta data
-        split = "train" if train else "val"
-        self.image_folder = os.path.join(data_root, "data")
-        self.audio_folder = os.path.join(data_root, "audios")
-        self.json_data = json.load(open(os.path.join(data_root, "metadata/{}_split.json".format(split)), "r"))['data']
+        split = "train" if train else "test"
+        self.json_data = json.load(open(os.path.join(data_root, "{}.json".format(split)), "r"))
+        self.image_folder = self.json_data['image_base_path']
+        self.audio_folder = self.json_data['audio_base_path']
         # load image embedding
-        image_feature_path = os.path.join(data_root, "metadata", "{}_split_caffe.pickle".format(split))
+        image_feature_path = self.json_data['image_feature_path']
         self.image_embedding = pickle.load(open(image_feature_path, mode='rb'), encoding='latin1')
         print("load image feature from: {}".format(image_feature_path))
+        self.data = self.json_data['data']
     
     def __len__(self):
-        return len(self.json_data)
+        return len(self.data)
     
     def __getitem__(self, index):
-        json_data = self.json_data[index]
+        json_data = self.data[index]
         image_path = json_data["image"][2:]
         audio_path = json_data['wav'][5:]
         audio_data, audio_len = load_one_audio_file(
@@ -86,7 +87,7 @@ class FlowerDataset(DatasetBase):
     def __init__(self, data_root, train=True):
         split = "train" if train else "test"
         self.json_data_all = json.load(open(os.path.join(data_root, "./{}.json".format(split)), "r"))
-        image_embedding_path = self.json_data_all["image_feature"]
+        image_embedding_path = self.json_data_all["image_feature_path"]
         print("load image embedding from:", image_embedding_path)
         self.image_embedding = pickle.load(open(image_embedding_path, "rb"))
         self.audio_folder = self.json_data_all["audio_base_path"]
@@ -121,10 +122,10 @@ class BirdDataset(DatasetBase):
     def __init__(self, data_root, train=True):
         split = "train" if train else "test"
         self.json_data_all = json.load(open(os.path.join(data_root, "./{}.json".format(split)), 'r'))
-        image_embedding_path = self.json_data_all['a_image_feature_path']
+        image_embedding_path = self.json_data_all['image_feature_path']
         print("load image embedding from:", image_embedding_path)
         self.image_embedding = pickle.load(open(image_embedding_path, 'rb'))
-        self.audio_folder = self.json_data_all['a_audio_base_path']
+        self.audio_folder = self.json_data_all['audio_base_path']
         self.data = self.json_data_all['data']
     
     def __len__(self):
@@ -276,7 +277,7 @@ class EvalClass(object):
         
 
 
-from Audio_to_Image.trainer import save_checkpoint
+from trainer import save_checkpoint
 class EvalHook(object):
     def __init__(self):
         self.best_accu = 0
@@ -406,6 +407,7 @@ def get_parser():
     parser.add_argument("--distill_T", type=float, default=2.0, help="")
     parser.add_argument("--dropout", type=float, default=0.5, help="")
     parser.add_argument("--bidirectional", action='store_true', default=False, help="")
+    parser.add_argument("--rnn_layers", type=int, default=1, help="")
 
     args = parser.parse_args()
     args.project_root = os.getcwd()
@@ -452,7 +454,7 @@ def main(args):
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size)
     # define model
     print("rank:{}, define model".format(args.local_rank))
-    model = CNNRNN(40, embedding_dim=1024, drop_prob=args.dropout, nhidden=1024, nsent=1024, bidirectional=args.bidirectional,)
+    model = CNNRNN(40, embedding_dim=1024, drop_prob=args.dropout, nhidden=1024, nsent=1024, bidirectional=args.bidirectional, rnn_layers=args.rnn_layers)
     batch_param = {'length_required':True, 'sorted_required':True}
     model = model.cuda()
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)

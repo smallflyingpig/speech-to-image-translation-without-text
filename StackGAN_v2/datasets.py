@@ -418,96 +418,16 @@ class TextDataset(data.Dataset):
 
 
 import json
-class PlacesSubSet(data.Dataset):
-    class_label = {
-        'bedroom':0, 'dinette':1, 'dining_room':2, 'home_office':3, 'hotel_room':4,
-        'kitchenette':5, 'living_room':6
-    }
-    def __init__(self, data_root, train=True, base_size=64, transform=None, target_transform=None, feature_switch="cnn_googlenet"):
-        # read meta data
-        split = "train" if train else "val"
-        self.data_root = data_root
-        self.image_folder = os.path.join(data_root, "data")
-        self.audio_folder = os.path.join(data_root, "audios")
-        self.json_data = json.load(open(os.path.join(data_root, "metadata/{}_split.json".format(split)), "r"))['data']
-        # load image embedding
-        feature_filename = os.path.join(data_root, "metadata", "{}_split_{}.pickle".format(split, feature_switch))
-        self.image_embedding = pickle.load(
-            open(feature_filename, mode='rb')
-            )
-        print("load features from: {}".format(feature_filename))
 
-        self.imsize = []
-        for i in range(cfg.TREE.BRANCH_NUM):
-            self.imsize.append(base_size)
-            base_size = base_size * 2
-
-        self.transform = transform
-        self.target_transform = target_transform
-        self.norm = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        self.iterator = self.prepare_training_pairs if train else self.prepare_test_pairs
-
-    def __len__(self):
-        return len(self.json_data)
-    
-    @staticmethod
-    def get_image_audio_path_class(json_data):
-        return json_data["image"][2:], json_data['wav'][5:], json_data['image'].split('/')[1]
-
-    def find_wrong_image(self, base_class_idx):
-        while True:
-            wrong_idx = random.randint(0, len(self.json_data)-1)
-            json_data = self.json_data[wrong_idx]
-            image_path, _, class_name = self.get_image_audio_path_class(json_data)
-            class_idx = self.class_label[class_name]
-            if class_idx != base_class_idx:
-                break
-        return image_path
-
-    def prepare_training_pairs(self, index):
-        json_data = self.json_data[index]
-        image_path, audio_path, class_name = self.get_image_audio_path_class(json_data)
-        embedding = self.image_embedding[index]
-        label = self.class_label[image_path.split("/")[0]]
-        wrong_image_path = self.find_wrong_image(label)
-        #print(self.data_root, image_path, wrong_image_path)
-        real_image = get_imgs(
-            os.path.join(self.data_root, "data", image_path), self.imsize, transform=self.transform, normalize=self.norm
-            )
-        wrong_image = get_imgs(
-            os.path.join(self.data_root, "data", wrong_image_path), self.imsize, transform=self.transform, normalize=self.norm
-            ) 
-        return real_image, wrong_image, embedding, image_path, label
-
-    def prepare_test_pairs(self, index):
-        json_data = self.json_data[index]
-        image_path, audio_path, class_name = self.get_image_audio_path_class(json_data)
-        embedding = np.expand_dims(self.image_embedding[index], axis=0)
-        #print(self.data_root, image_path, wrong_image_path)
-        real_image = get_imgs(
-            os.path.join(self.data_root, "data", image_path), self.imsize, transform=self.transform, normalize=self.norm
-            )
-        
-        return real_image, embedding, image_path
-
-   
-    def __getitem__(self, index):
-        return self.iterator(index)
-
-class FlowersDataset(data.Dataset):
+class BaseDataset(data.Dataset):
     def __init__(self, data_root, train=True, base_size=64, transform=None, target_transform=None, feature_switch='image'):
         split = "train" if train else "test"
         self.data_root = data_root
-        self.image_folder = os.path.join(self.data_root, "jpg")
-        self.audio_folder = os.path.join(self.data_root, "audio")
         self.json_data_all = json.load(open(os.path.join(self.data_root, "{}.json".format(split))))
+        self.image_folder = self.json_data_all["image_base_path"]
+        self.audio_folder = self.json_data_all['audio_base_path']
         self.json_data = self.json_data_all['data']
-        if feature_switch != '':
-            embedding_path = os.path.splitext(self.json_data_all["audio_feature"])[0]+"_{}.pickle".format(feature_switch)
-        else:
-            embedding_path = self.json_data_all["audio_feature"]
+        embedding_path = os.path.join(data_root, split, "audio_features_{}.pickle".format(feature_switch))
         print("load features from: {}".format(embedding_path))
         self.embedding = pickle.load(open(embedding_path, "rb"))
         
@@ -526,10 +446,16 @@ class FlowersDataset(data.Dataset):
     def __len__(self):
         return len(self.json_data)
     
+    def _get_img(self, item):
+        return item['img']
+
+    def _get_class(self, item):
+        return int(item['class'])
+
     def find_wrong_image(self, base_class_label):
         while True:
             json_data, _ = self.get_rand(self.json_data)
-            image_path, class_label = json_data["img"], int(json_data['class'])
+            image_path, class_label = self._get_img(json_data), self._get_class(json_data)
             if class_label != base_class_label:
                 break
         return image_path
@@ -542,7 +468,7 @@ class FlowersDataset(data.Dataset):
 
     def prepare_train_pairs(self, index):
         json_data = self.json_data[index]
-        image_path, audio_path, class_label = json_data["img"], json_data['wav'], json_data['class']
+        image_path, class_label = self._get_img(json_data), self._get_class(json_data)
         embedding, _ = self.get_rand(self.embedding[index])
         wrong_image_path = self.find_wrong_image(class_label)
         real_image = get_imgs(
@@ -555,10 +481,155 @@ class FlowersDataset(data.Dataset):
 
     def prepare_test_pairs(self, index):
         json_data = self.json_data[index]
-        image_path, audio_path, class_label = json_data["img"], json_data['wav'], json_data['class']
+        image_path, class_label = self._get_img(json_data), self._get_class(json_data)
         # embedding, _ = self.get_rand(self.embedding[index])
         embedding = self.embedding[index]
 
+        real_image = get_imgs(
+            os.path.join(self.image_folder, image_path), self.imsize, transform=self.transform, normalize=self.norm
+        )
+        return real_image, embedding, image_path
+
+    def __getitem__(self, index):
+        return self.iterator(index)
+
+
+   
+class BirdsDataset(BaseDataset):
+    def __init__(self, data_root, train=True, base_size=64, transform=None, target_transform=None, feature_switch='image'):
+        super(BirdsDataset, self).__init__(data_root, train, base_size, transform, target_transform, feature_switch)
+        self.bbox = self.load_bbox()
+
+    def load_bbox(self):
+        data_dir = self.data_root
+        bbox_path = os.path.join(data_dir, 'CUB_200_2011/bounding_boxes.txt')
+        df_bounding_boxes = pd.read_csv(bbox_path,
+                                        delim_whitespace=True,
+                                        header=None).astype(int)
+        #
+        filepath = os.path.join(data_dir, 'CUB_200_2011/images.txt')
+        df_filenames = \
+            pd.read_csv(filepath, delim_whitespace=True, header=None)
+        filenames = df_filenames[1].tolist()
+        print('Total filenames: ', len(filenames), filenames[0])
+        #
+        filename_bbox = {img_file[:-4]: [] for img_file in filenames}
+        numImgs = len(filenames)
+        for i in range(0, numImgs):
+            # bbox = [x-left, y-top, width, height]
+            bbox = df_bounding_boxes.iloc[i][1:].tolist()
+
+            key = filenames[i][:-4]
+            filename_bbox[key] = bbox
+        #
+        return filename_bbox
+
+    def _get_img(self, item):
+        return item['image']
+
+    def _get_class(self, item):
+        return int(item['class'].split('.')[0])
+    
+    def _get_bbox(self, item):
+        return self.bbox[item['image'][:-4]]
+
+    def prepare_train_pairs(self, index):
+        json_data = self.json_data[index]
+        image_path, class_label = self._get_img(json_data), self._get_class(json_data)
+        embedding, _ = self.get_rand(self.embedding[index])
+        wrong_image_path = self.find_wrong_image(class_label)
+        read_bbox = self._get_bbox(json_data)
+        wrong_bbox = self._get_bbox(json_data)
+        real_image = get_imgs(
+            os.path.join(self.image_folder, image_path), self.imsize, bbox=read_bbox, transform=self.transform, normalize=self.norm
+        )
+        wrong_image = get_imgs(
+            os.path.join(self.image_folder, wrong_image_path), self.imsize, bbox=wrong_bbox, transform=self.transform, normalize=self.norm
+        )
+        return real_image, wrong_image, embedding, image_path, class_label
+
+    def prepare_test_pairs(self, index):
+        json_data = self.json_data[index]
+        image_path, class_label = self._get_img(json_data), self._get_class(json_data)
+        # embedding, _ = self.get_rand(self.embedding[index])
+        embedding = self.embedding[index]
+        real_image = get_imgs(
+            os.path.join(self.image_folder, image_path), self.imsize, transform=self.transform, normalize=self.norm
+        )
+        return real_image, embedding, image_path
+
+    def __getitem__(self, index):
+        return self.iterator(index)
+
+
+class PlacesSubSet(BaseDataset):
+    class_label = {
+        'bedroom':0, 'dinette':1, 'dining_room':2, 'home_office':3, 'hotel_room':4,
+        'kitchenette':5, 'living_room':6
+    }
+    def __init__(self, data_root, train=True, base_size=64, transform=None, target_transform=None, feature_switch="cnn_googlenet"):
+        super(PlacesSubSet, self).__init__(data_root, train, base_size, transform, target_transform, feature_switch)
+    
+    def _get_img(self, item):
+        return item['image'][2:]
+
+    def _get_class(self, item):
+        return self.class_label[item['image'].split("/")[1]]
+
+    def prepare_training_pairs(self, index):
+        json_data = self.json_data[index]
+        image_path, label = self._get_img(json_data), self._get_class(json_data)
+        embedding = self.image_embedding[index]
+        wrong_image_path = self.find_wrong_image(label)
+        #print(self.data_root, image_path, wrong_image_path)
+        real_image = get_imgs(
+            os.path.join(self.json_data['image_base_path'], image_path), self.imsize, transform=self.transform, normalize=self.norm
+            )
+        wrong_image = get_imgs(
+            os.path.join(self.json_data['image_base_path'], wrong_image_path), self.imsize, transform=self.transform, normalize=self.norm
+            ) 
+        return real_image, wrong_image, embedding, image_path, label
+
+    def prepare_test_pairs(self, index):
+        json_data = self.json_data[index]
+        image_path, label = self._get_img(json_data), self._get_class(json_data)
+        embedding = np.expand_dims(self.image_embedding[index], axis=0)
+        #print(self.data_root, image_path, wrong_image_path)
+        real_image = get_imgs(
+            os.path.join(self.json_data['image_base_path'], image_path), self.imsize, transform=self.transform, normalize=self.norm
+            )
+        
+        return real_image, embedding, image_path
+
+   
+class FlowersDataset(data.Dataset):
+    def __init__(self, data_root, train=True, base_size=64, transform=None, target_transform=None, feature_switch='image'):
+        super(FlowersDataset, self).__init__(data_root, train, base_size, transform, target_transform, feature_switch)
+
+    def _get_img(self, item):
+        return item['img']
+
+    def _get_class(self, item):
+        return int(item['class'])
+
+    def prepare_train_pairs(self, index):
+        json_data = self.json_data[index]
+        image_path, class_label = self._get_img(json_data), self._get_class(json_data)
+        embedding, _ = self.get_rand(self.embedding[index])
+        wrong_image_path = self.find_wrong_image(class_label)
+        real_image = get_imgs(
+            os.path.join(self.image_folder, image_path), self.imsize, transform=self.transform, normalize=self.norm
+        )
+        wrong_image = get_imgs(
+            os.path.join(self.image_folder, wrong_image_path), self.imsize, transform=self.transform, normalize=self.norm
+        )
+        return real_image, wrong_image, embedding, image_path, class_label
+
+    def prepare_test_pairs(self, index):
+        json_data = self.json_data[index]
+        image_path, class_label = self._get_img(json_data), self._get_class(json_data)
+        # embedding, _ = self.get_rand(self.embedding[index])
+        embedding = self.embedding[index]
         real_image = get_imgs(
             os.path.join(self.image_folder, image_path), self.imsize, transform=self.transform, normalize=self.norm
         )

@@ -57,60 +57,6 @@ def extract_one_feature(model, audio_file_paths, cuda=True):
     return feature.detach().cpu().numpy(), lens_np
 
 
-@torch.no_grad()
-def extract_feature_for_StackGANv2(model, 
-    train_json_file, val_json_file, train_filename_file, val_filename_file, feature_len=1024, audio_switch=0, cuda=True,
-    extract_func=extract_one_feature):
-    root = os.getcwd()
-    with open(os.path.join(root, train_json_file), "r") as fp:
-        train_json = json.load(fp)
-    with open(os.path.join(root, val_json_file), "r") as fp:
-        val_json = json.load(fp)
-
-    with open(os.path.join(root, train_filename_file), "rb") as fp:
-        train_filename = pickle.load(fp, encoding="bytes")
-    with open(os.path.join(root, val_filename_file), "rb") as fp:
-        val_filename = pickle.load(fp, encoding="bytes")
-
-    for json_data, filename_list, filename_file in zip((train_json, val_json),
-                                                    (train_filename, val_filename), 
-                                                    (train_filename_file, val_filename_file)):
-        audio_base_path = json_data["a_audio_base_path"]
-        audio_feature_all = []
-        audio_lens_all = []
-        bar = tqdm.tqdm(filename_list)
-        if not os.path.isdir(os.path.join(audio_base_path)):
-            print("error: audio switch is no exist")
-            return
-        audio_file_paths = []
-        for filename in bar:
-            audio_file_paths = [os.path.join(audio_base_path, filename+"_{}.wav".format(_idx)) for _idx in range(10)]
-
-            feature, lens = extract_func(model, audio_file_paths, cuda)
-            audio_feature_all.append(feature)
-            audio_lens_all.append(lens)
-        bar.close()
-        with open(os.path.join(os.path.dirname(filename_file), "audio_features_{}.pickle".format(audio_switch)), "wb") as fp:
-            pickle.dump(audio_feature_all, fp)
-        with open(os.path.join(os.path.dirname(filename_file), "audio_features_lens-{}.pickle".format(audio_switch)), "wb") as fp:
-            pickle.dump(audio_lens_all, fp)
-
-
-
-def extract_feature_for_StackGANv2_cnn_rnn_attn(model_file, train_json_file, val_json_file, 
-    train_filename_file, val_filename_file, 
-    class_num=150, embedding_dim=1024, dropout=0,
-    feature_len=1024, audio_switch=0, cuda=True, **kwargs):
-    root = os.getcwd()
-    model = CNNRNN(40, embedding_dim=1024, nhidden=1024, nsent=1024, **kwargs)
-    load_checkpoint(model, model_file, map_location=torch.device('cpu'), strict=True)
-    if cuda:
-        model = model.cuda()
-    extract_feature_for_StackGANv2(
-        model, train_json_file, val_json_file, train_filename_file, val_filename_file, feature_len, audio_switch
-    )
-
-
 import math
 @torch.no_grad()
 def extract_audio_feature(model, filenames):
@@ -132,11 +78,11 @@ def extract_audio_feature(model, filenames):
 
 def extract_audio_feature_birds(model, audio_switch, **kwargs):
     root = os.getcwd()
-    for split in ('train', 'val'):
+    for split in ('train', 'test'):
         split_json = json.load(open(os.path.join(root, "./data/birds/{}.json".format(split)), 'r'))
         split_filenames = []
         for _d in split_json['data']:
-            split_filenames += [os.path.join(split_json['a_audio_base_path'], __d) for __d in _d['audio']]
+            split_filenames += [os.path.join(split_json['audio_base_path'], __d) for __d in _d['audio']]
         
         
         split_features, split_audio_lens = extract_audio_feature(model, split_filenames)
@@ -161,26 +107,26 @@ def extract_audio_feature_flowers(model, audio_switch, **kwargs):
         split_shape = split_features.shape
         split_features = split_features.reshape(split_shape[0]//10, 10, split_shape[1])
         split_audio_lens = split_audio_lens.reshape(split_shape[0]//10, 10)
-        with open(os.path.join(root, "./data/flowers/{}_audio_features_{}.pickle".format(split, audio_switch)), "wb") as fp:
+        with open(os.path.join(root, "./data/flowers/{}/audio_features_{}.pickle".format(split, audio_switch)), "wb") as fp:
             pickle.dump(split_features, fp)
-        with open(os.path.join(root, "./data/flowers/{}_audio_features_lens_{}.pickle".format(split, audio_switch)), "wb") as fp:
+        with open(os.path.join(root, "./data/flowers/{}/audio_features_lens_{}.pickle".format(split, audio_switch)), "wb") as fp:
             pickle.dump(split_audio_lens, fp)
 
     
 
 def extract_audio_feature_places(model_file, audio_switch, **kwargs):
     root = os.getcwd()
-    audio_folder = os.path.join(root, "./data/Places_subset/audios")
-    for split in ('train', 'val'):
-        split_json = json.load(open(os.path.join(root, "./data/Places_subset/metadata/{}_split.json".format(split)), 'r'))
+    for split in ('train', 'test'):
+        split_json = json.load(open(os.path.join(root, "./data/Places_subset/{}.json".format(split)), 'r'))
+        audio_folder = json_data["audio_base_path"]
         split_filenames = []
         for _d in split_json['data']:
             split_filenames.append(os.path.join(audio_folder, _d['wav'][5:]))
         split_features, split_audio_lens = extract_audio_feature(model, split_filenames)
         print(split_features.shape)
-        with open(os.path.join(root, "./data/Places_subset/metadata/{}_split_audio_features_{}.pickle".format(split, audio_switch)), "wb") as fp:
+        with open(os.path.join(root, "./data/Places_subset/{}/audio_features_{}.pickle".format(split, audio_switch)), "wb") as fp:
             pickle.dump(split_features, fp)
-        with open(os.path.join(root, "./data/Places_subset/metadata/{}_split_audio_features_lens_{}.pickle".format(split, audio_switch)), "wb") as fp:
+        with open(os.path.join(root, "./data/Places_subset/{}/audio_features_lens_{}.pickle".format(split, audio_switch)), "wb") as fp:
             pickle.dump(split_audio_lens, fp)
 
 
@@ -201,6 +147,8 @@ def get_parser():
     parser.add_argument("--dropout", type=float, default=0)
     parser.add_argument("--dataset", choices=['birds', 'flowers', 'places'], default='birds', help="")
     parser.add_argument("--bidirectional", action='store_true', default=False, help="")
+    parser.add_argument("--rnn_layers", type=int, default=1, help="")
+
     
     args, _ = parser.parse_known_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -210,7 +158,7 @@ def get_parser():
 if __name__=="__main__":
     args = get_parser()
     print(args)
-    model = CNNRNN(40, embedding_dim=1024, nhidden=1024, nsent=1024, bidirectional=args.bidirectional)
+    model = CNNRNN(40, embedding_dim=1024, nhidden=1024, nsent=1024, bidirectional=args.bidirectional, rnn_layers=args.rnn_layers)
     load_checkpoint(model, args.model, map_location=torch.device('cpu'), strict=True)
     model.eval()
     if args.dataset == "birds":

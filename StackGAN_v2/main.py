@@ -19,7 +19,6 @@ sys.path.append(dir_path)
 
 
 from miscc.config import cfg, cfg_from_file
-from dataloader import Dataset_birds, Dataset_birds_anchor, NormalizeRescale
 
 
 # 19 classes --> 7 valid classes with 8,555 images
@@ -155,22 +154,20 @@ if __name__ == "__main__":
             transform=image_transform,
             feature_switch=args.audio_switch
             )
+    elif cfg.DATA_DIR.find("birds") != -1:
+        from datasets import BirdsDataset
+        dataset = BirdsDataset(cfg.DATA_DIR, train=cfg.TRAIN.FLAG,
+           base_size=cfg.TREE.BASE_SIZE,
+           transform=image_transform,
+           feature_switch=args.audio_switch
+           )
     elif cfg.GAN.B_CONDITION:  # text to image task
-        if not args.my_dataset:
-            from datasets import TextDataset
-            dataset = TextDataset(cfg.DATA_DIR, split_dir,
-                                  base_size=cfg.TREE.BASE_SIZE,
-                                  transform=image_transform,
-                                  asr_flag=args.asr_flag,
-                                  audio_switch=args.audio_switch)
-        else:
-            CUB_200_2011_path = os.path.join(".", "./data/birds/CUB_200_2011")
-            embedding_path = os.path.join(".", "./data/birds/CUB_200_2011_embedding")
-            text_path = os.path.join(".", "./data/birds/text")
-            dataset = Dataset_birds(CUB_200_2011_path, embedding_path, text_path, branch=cfg.TREE.BRANCH_NUM,
-                stage="train")
-        # dataset_val = Dataset_birds(CUB_200_2011_path, embedding_path, text_path, branch=args.branch,
-        #     stage="val")
+        from datasets import TextDataset
+        dataset = TextDataset(cfg.DATA_DIR, split_dir,
+                              base_size=cfg.TREE.BASE_SIZE,
+                              transform=image_transform,
+                              asr_flag=args.asr_flag,
+                              audio_switch=args.audio_switch)
 
     assert dataset
     num_gpu = len(cfg.GPU_ID.split(','))
