@@ -60,9 +60,15 @@ you can get APP_ID, API_KEY, SECRET_KEY from Baidu AI platform(free).
 In the project dictionary "speech-to-image-translation-without-text", run
 ```
 export PYTHONPATH=$PYTHONPATH:$(pwd)
-bash ./run_audio_encoder.sh 1 --output_dir ./output/Audio_to_Image/log/birds_speech_encoder --epoch 1000 --eval_every 10 --lr_scheduler_step_size 200 --lr_scheduler_gamma 0.5 --loss_diff 1 --loss_same 0.1 --l1_flag --jel_flag --lambda_l1 5 --distill_flag --lambda_distill 1000 --learning_rate 1e-3  --dataset birds --bidirectional
+bash ./run_audio_encoder.sh 1 --output_dir ./output/Audio_to_Image/log/birds_speech_encoder --epoch 1000 --eval_every 10 --lr_scheduler_step_size 200 --lr_scheduler_gamma 0.5 --loss_diff 1 --loss_same 0.1 --l1_flag --jel_flag --lambda_l1 5 --distill_flag --lambda_distill 1000 --learning_rate 1e-3  --dataset birds --bidirectional --rnn_layers 1
 ```
+The training for CUB-200 dataset will cost about 1 day on a 1080ti GPU.
 ## extracting speech features
+Run 
+```
+python ./Audio_to_Image/extract_audio_feature.py --model ./output/Audio_to_Image/log/birds_speech_encoder/latest.pth --audio_switch googlenet_caffe --dataset birds --bidirectional --rnn_layers 1
+```
+the features will be save in "./data/birds/train" and "./data/birds/test". 
 ## training the generator
 
 # evalution

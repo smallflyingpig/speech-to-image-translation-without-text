@@ -127,8 +127,8 @@ def extract_birds_image_feature():
         with open(json_file, "r") as fp:
             json_data = json.load(fp)
         feature_all = []
-        feature_filename = json_data['a_image_feature_path']
-        image_base_path = json_data['a_image_base_path']
+        feature_filename = json_data['image_feature_path']
+        image_base_path = json_data['image_base_path']
         data = json_data['data']
         bar = tqdm.tqdm(data)
         for item in bar:
