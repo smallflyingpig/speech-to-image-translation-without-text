@@ -70,6 +70,9 @@ python ./Audio_to_Image/extract_audio_feature.py --model ./output/Audio_to_Image
 ```
 the features will be save in "./data/birds/train" and "./data/birds/test". 
 ## training the generator
-
+Run
+```
+python ./StackGAN_v2/main.py --cfg ./StackGAN_v2/cfg/birds_3stages.yml  --output_dir birds_speech_encoder --audio_switch googlenet_caffe  --data_dir ./data/birds --branch_num 3
+```
 # evalution
 
