@@ -531,18 +531,19 @@ class BirdsDataset(BaseDataset):
     def _get_class(self, item):
         return int(item['class'].split('.')[0])
     
-    def _get_bbox(self, item):
-        return self.bbox[item['image'][:-4]]
+    def _get_bbox(self, image_path):
+        return self.bbox[image_path[:-4]]
 
     def prepare_train_pairs(self, index):
         json_data = self.json_data[index]
         image_path, class_label = self._get_img(json_data), self._get_class(json_data)
         embedding, _ = self.get_rand(self.embedding[index])
         wrong_image_path = self.find_wrong_image(class_label)
-        read_bbox = self._get_bbox(json_data)
-        wrong_bbox = self._get_bbox(json_data)
+        real_bbox = self._get_bbox(image_path)
+        wrong_bbox = self._get_bbox(wrong_image_path)
+        
         real_image = get_imgs(
-            os.path.join(self.image_folder, image_path), self.imsize, bbox=read_bbox, transform=self.transform, normalize=self.norm
+            os.path.join(self.image_folder, image_path), self.imsize, bbox=real_bbox, transform=self.transform, normalize=self.norm
         )
         wrong_image = get_imgs(
             os.path.join(self.image_folder, wrong_image_path), self.imsize, bbox=wrong_bbox, transform=self.transform, normalize=self.norm
