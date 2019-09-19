@@ -43,6 +43,7 @@ def get_imgs(img_path, imsize, bbox=None,
     width, height = img.size
     if bbox is not None:
         r = int(np.maximum(bbox[2], bbox[3]) * 0.75)
+        r = max(r, 10)
         center_x = int((2 * bbox[0] + bbox[2]) / 2)
         center_y = int((2 * bbox[1] + bbox[3]) / 2)
         y1 = np.maximum(0, center_y - r)
