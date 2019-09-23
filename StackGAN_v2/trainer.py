@@ -680,7 +680,7 @@ class condGANTrainer(object):
 
     @torch.no_grad()
     def evaluate(self, split_dir):
-        sample_num_per_image = 10
+        sample_num_per_image = 1
         self.inception_model = INCEPTION_V3().eval()
 
         if cfg.CUDA:

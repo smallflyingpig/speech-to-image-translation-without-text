@@ -102,3 +102,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+*.ubnutu-vr
+.log
+*.pth
+.jpg
+*.png
+*.pickle
+
