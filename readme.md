@@ -38,10 +38,10 @@ Here we use CUB-200 as example and other datasets are similar to CUB-200.
 python ./Audio_to_Image/text_to_speech.py --dataset birds --output_dir ./data/birds/CUB_200_2011_audio --APP_ID APP_ID --API_KEY API_KEY --SECRET_KEY SECRET_KEY
 ```
 you can get APP_ID, API_KEY, SECRET_KEY from Baidu AI platform(free).
- - Or you can contact the author to get the data.
+ - Or you can download the speech data from our [speech-to-image](https://smallflyingpig.github.io/speech-to-image/main) project main page.
 ### prepare image features
  - Extract image feautures using caffe googlenet(see details in "./prepare_image_features.py") or download the image feature from our [speech-to-image](https://smallflyingpig.github.io/speech-to-image/main) project home page(recommend), then put the features for training into "./data/birds/train" and that for testing into "./data/birds/test".
-  
+
 ### dictionary structure for data
 ```
 -> tree ./data/birds -L 2
@@ -74,5 +74,16 @@ Run
 ```
 python ./StackGAN_v2/main.py --cfg ./StackGAN_v2/cfg/birds_3stages.yml  --output_dir birds_speech_encoder --audio_switch googlenet_caffe  --data_dir ./data/birds --branch_num 3
 ```
+The training will cost about 3 days on a 1080ti GPU for no more than 220K iterations.
 # evalution
+Run
+```
+python ./StackGAN_v2/main.py --cfg ./StackGAN_v2/cfg/eval_birds.yml --eval_net_g ./output/StackGAN_v2/birds_speech_encoder/Model/netG_220000.pth  --output_dir birds_speech_encoder --audio_switch googlenet_caffe  --data_dir ./data/birds --branch_num 3
+```
+to generate images conditioned on the input speech descriptions on testing set. Than we use [FID](https://github.com/bioinf-jku/TTUR) and [IS](https://github.com/hanzhanggit/StackGAN-inception-model) to evaluate the result.
 
+# project home page
+our results, data, pretrained model can be found on our [speech-to-image](https://smallflyingpig.github.io/speech-to-image/main) project main page.
+
+# Acknowledgement
+Thanks to the valuable discussion with [Shiqi Wang](http://www.cs.cityu.edu.hk/~shiqwang/). Besides, thanks to the open source of [StackGAN v2](https://github.com/hanzhanggit/StackGAN-v2), [DaveNet](https://github.com/dharwath/DAVEnet-pytorch), [FID](https://github.com/bioinf-jku/TTUR) and [IS](https://github.com/hanzhanggit/StackGAN-inception-model), as well as the free use of [Baidu TTS](https://ai.baidu.com/tech/speech/tts).
