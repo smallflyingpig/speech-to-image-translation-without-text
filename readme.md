@@ -42,7 +42,7 @@ you can get APP_ID, API_KEY, SECRET_KEY from Baidu AI platform(free).
 ### prepare image features
  - Extract image feautures using caffe googlenet(see details in "./prepare_image_features.py") or download the image feature from our [speech-to-image](https://smallflyingpig.github.io/speech-to-image/main) project home page(recommend), then put the features for training into "./data/birds/train" and that for testing into "./data/birds/test".
 
-### dictionary structure for data
+### directory structure for data
 ```
 -> tree ./data/birds -L 2
 ./data/birds
