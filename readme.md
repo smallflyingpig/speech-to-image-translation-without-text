@@ -1,4 +1,4 @@
-# Speech-to-Image Transaltion without Text
+# Direct Speech-to-Image Transaltion
 ![proposal_model](./proposal_model.jpg)
 Our model aims to translate speech signals into image without the middle text representation. We use a speech encoder based CNN+RNN to extract an embedding feature from the input speech description and synthesize images with semantical consistancy by a stacked generator. 
 This project provides the code for training the model and the method to evaluate the model on synthesized and real data.
