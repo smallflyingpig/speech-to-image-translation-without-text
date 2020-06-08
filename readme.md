@@ -9,7 +9,7 @@ This project provides the code for training the model and the method to evaluate
 
 # Cite us
 If you use this code or part of it, please cite us!  
-*Jiguo Li, Xinfeng Zhang, Chuanming Jia, Jizheng Xu, Li Zhang, Yue Wang, Siwei Ma, Wen Gao, "Speech-to-Image Translation without Text"* [arxiv(avaliable soon)]()
+*Jiguo Li, Xinfeng Zhang, Chuanming Jia, Jizheng Xu, Li Zhang, Yue Wang, Siwei Ma, Wen Gao, "Speech-to-Image Translation without Text"* [arxiv](https://arxiv.org/abs/2004.03413?context=cs.MM)
 
 
 # Prerequisites
